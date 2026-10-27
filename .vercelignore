@@ -1,0 +1,8 @@
+backend/
+scripts/
+database/
+supabase/
+run_backend.py
+*.py
+*.pdf
+fdr-guardian.zip
