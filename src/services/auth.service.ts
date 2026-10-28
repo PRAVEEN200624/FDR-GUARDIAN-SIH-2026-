@@ -401,6 +401,7 @@ export const AuthService = {
       });
     }
     try {
+      localStorage.removeItem('fdr_guardian_current_user_v2');
       localStorage.removeItem('fdr_guardian_current_user_v1');
       localStorage.removeItem('fdr_current_user');
       localStorage.removeItem('fdr_token');

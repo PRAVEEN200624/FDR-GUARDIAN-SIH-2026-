@@ -10,17 +10,16 @@ import {
 } from '../services/seedData';
 
 const STORAGE_KEYS = {
-  FDRS: 'fdr_guardian_records_v1',
-  INSTITUTIONS: 'fdr_guardian_institutions_v1',
-  BANKS: 'fdr_guardian_banks_v1',
-  USERS: 'fdr_guardian_users_v1',
-  CURRENT_USER: 'fdr_guardian_current_user_v1',
-  AUDIT_LOGS: 'fdr_guardian_audit_logs_v1',
-  NOTIFICATIONS: 'fdr_guardian_notifications_v1',
-  RECONCILIATIONS: 'fdr_guardian_reconciliations_v1',
-  REGISTRATION_REQUESTS: 'fdr_guardian_registration_requests_v1',
+  FDRS: 'fdr_guardian_records_v2',
+  INSTITUTIONS: 'fdr_guardian_institutions_v2',
+  BANKS: 'fdr_guardian_banks_v2',
+  USERS: 'fdr_guardian_users_v2',
+  CURRENT_USER: 'fdr_guardian_current_user_v2',
+  AUDIT_LOGS: 'fdr_guardian_audit_logs_v2',
+  NOTIFICATIONS: 'fdr_guardian_notifications_v2',
+  RECONCILIATIONS: 'fdr_guardian_reconciliations_v2',
+  REGISTRATION_REQUESTS: 'fdr_guardian_registration_requests_v2',
 };
-
 
 type Listener = () => void;
 const listeners: Set<Listener> = new Set();
@@ -47,24 +46,6 @@ function notifySubscribers() {
  */
 export function initializeStorage() {
   if (typeof window === 'undefined') return;
-
-  // Clear out obsolete legacy mock cache referencing deleted demo institutes
-  try {
-    const rawCurUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-    if (rawCurUser && rawCurUser.toLowerCase().includes('kalinga')) {
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
-    }
-    const rawInsts = localStorage.getItem(STORAGE_KEYS.INSTITUTIONS);
-    if (rawInsts && rawInsts.toLowerCase().includes('kalinga')) {
-      localStorage.setItem(STORAGE_KEYS.INSTITUTIONS, JSON.stringify(INITIAL_INSTITUTIONS));
-    }
-    const rawFdrs = localStorage.getItem(STORAGE_KEYS.FDRS);
-    if (rawFdrs && rawFdrs.toLowerCase().includes('kalinga')) {
-      localStorage.setItem(STORAGE_KEYS.FDRS, JSON.stringify(INITIAL_FDRS));
-    }
-  } catch (e) {
-    console.warn('Storage purge check notice:', e);
-  }
 
   if (!localStorage.getItem(STORAGE_KEYS.FDRS)) {
     localStorage.setItem(STORAGE_KEYS.FDRS, JSON.stringify(INITIAL_FDRS));

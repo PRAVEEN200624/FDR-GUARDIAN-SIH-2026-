@@ -25,6 +25,11 @@ export const BankVerificationPage: React.FC<Props> = ({ currentUser }) => {
   const [fdrs, setFdrs] = useState<FDRRecord[]>([]);
   const [selectedFdr, setSelectedFdr] = useState<FDRRecord | null>(null);
 
+  // Filter State
+  const [bankFilter, setBankFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED'>('ALL');
+
   // Form State
   const [outcome, setOutcome] = useState<'CONFIRMED' | 'MISMATCH' | 'UNABLE_TO_VERIFY' | 'INFO_REQUIRED'>('CONFIRMED');
   const [cbsRef, setCbsRef] = useState('');
@@ -33,22 +38,38 @@ export const BankVerificationPage: React.FC<Props> = ({ currentUser }) => {
 
   useEffect(() => {
     const update = () => {
-      const all = FDRService.getAllFDRs(undefined, currentUser);
-      setFdrs(all);
-      if (!selectedFdr && all.length > 0) {
-        // Select first pending if available, or first item
-        const pending = all.find((f) => f.bankVerification.status === 'PENDING') || all[0];
+      const all = FDRService.getAllFDRs(
+        {
+          bankId: bankFilter !== 'ALL' ? bankFilter : undefined,
+          search: searchQuery.trim() || undefined,
+        },
+        { ...currentUser, role: 'BANK_OFFICER' }
+      );
+
+      const filtered = statusFilter === 'ALL'
+        ? all
+        : all.filter((f) => (f.bankVerification?.status || 'PENDING') === statusFilter);
+
+      setFdrs(filtered);
+      if (!selectedFdr && filtered.length > 0) {
+        const pending = filtered.find((f) => (f.bankVerification?.status || 'PENDING') === 'PENDING') || filtered[0];
         setSelectedFdr(pending);
       } else if (selectedFdr) {
-        // keep updated
-        const updated = all.find((f) => f.id === selectedFdr.id);
+        const updated = filtered.find((f) => f.id === selectedFdr.id);
         if (updated) setSelectedFdr(updated);
       }
     };
     update();
     const unsub = subscribeToStorage(update);
     return unsub;
-  }, [currentUser]);
+  }, [currentUser, bankFilter, searchQuery, statusFilter]);
+
+  const handleSimulateCbs = () => {
+    if (!selectedFdr) return;
+    setCbsRef(`SBI-CBS-AUTH-${Date.now().toString().slice(-6)}`);
+    setComments(`Core Banking Solution ledger verified. Deposit active under Account No. 39928174502. Principal sum of ${formatINR(selectedFdr.principalAmount)} under joint lien to AICTE, New Delhi.`);
+    setOutcome('CONFIRMED');
+  };
 
   const handleRecordVerification = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,57 +121,111 @@ export const BankVerificationPage: React.FC<Props> = ({ currentUser }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Queue (4 cols) */}
         <div className="lg:col-span-4 bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden flex flex-col h-[750px]">
-          <div className="p-3.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-800 uppercase tracking-wide flex items-center justify-between">
-            <span>Assigned Verification Queue</span>
-            <span className="bg-gov-navy text-white text-[10px] px-2 py-0.5 rounded-full">
-              {fdrs.length}
-            </span>
+          <div className="p-3 bg-slate-50 border-b border-slate-200 space-y-2">
+            <div className="font-bold text-xs text-slate-800 uppercase tracking-wide flex items-center justify-between">
+              <span>Verification Queue</span>
+              <span className="bg-gov-navy text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                {fdrs.length} Cases
+              </span>
+            </div>
+
+            {/* Quick Filter Controls */}
+            <div className="space-y-1.5 pt-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search FDR No. or College..."
+                className="w-full px-2.5 py-1.5 border border-slate-300 rounded bg-white text-xs text-slate-900 placeholder:text-slate-400"
+              />
+              <div className="flex gap-1.5 text-[11px]">
+                <select
+                  value={bankFilter}
+                  onChange={(e) => setBankFilter(e.target.value)}
+                  className="flex-1 p-1 border border-slate-300 rounded bg-white text-slate-700"
+                >
+                  <option value="ALL">All Partner Banks</option>
+                  <option value="bank-sbi">State Bank of India (My Bank)</option>
+                  <option value="bank-canara">Canara Bank</option>
+                  <option value="bank-pnb">Punjab National Bank</option>
+                  <option value="bank-bob">Bank of Baroda</option>
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="p-1 border border-slate-300 rounded bg-white text-slate-700"
+                >
+                  <option value="ALL">All Status</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100 p-2 space-y-1">
-            {fdrs.map((item) => {
-              const isSelected = selectedFdr?.id === item.id;
-              const isPending = item.bankVerification.status === 'PENDING';
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedFdr(item)}
-                  className={`p-3 rounded-md cursor-pointer transition text-xs border ${
-                    isSelected
-                      ? 'bg-blue-50/80 border-gov-navy shadow-2xs'
-                      : 'hover:bg-slate-50 border-transparent'
-                  }`}
+            {fdrs.length === 0 ? (
+              <div className="text-center py-12 px-4 text-slate-500 text-xs space-y-2">
+                <p className="font-semibold text-slate-700">No deposits in this filter queue</p>
+                <p className="text-[11px]">Try switching the bank filter above to "All Partner Banks".</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBankFilter('ALL');
+                    setSearchQuery('');
+                    setStatusFilter('ALL');
+                  }}
+                  className="px-3 py-1 bg-gov-navy text-white text-[11px] font-semibold rounded hover:bg-blue-900 transition"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-slate-900">{item.fdrNumber}</span>
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        item.bankVerification.status === 'CONFIRMED'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : item.bankVerification.status === 'MISMATCH'
-                          ? 'bg-rose-100 text-rose-800'
-                          : isPending
-                          ? 'bg-amber-100 text-amber-900 animate-pulse'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {item.bankVerification.status}
-                    </span>
-                  </div>
+                  Show All Submissions
+                </button>
+              </div>
+            ) : (
+              fdrs.map((item) => {
+                const isSelected = selectedFdr?.id === item.id;
+                const isPending = item.bankVerification.status === 'PENDING';
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => setSelectedFdr(item)}
+                    className={`p-3 rounded-md cursor-pointer transition text-xs border ${
+                      isSelected
+                        ? 'bg-blue-50/80 border-gov-navy shadow-2xs'
+                        : 'hover:bg-slate-50 border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-slate-900">{item.fdrNumber}</span>
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          item.bankVerification.status === 'CONFIRMED'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : item.bankVerification.status === 'MISMATCH'
+                            ? 'bg-rose-100 text-rose-800'
+                            : isPending
+                            ? 'bg-amber-100 text-amber-900 animate-pulse'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {item.bankVerification.status}
+                      </span>
+                    </div>
 
-                  <div className="text-slate-700 font-medium truncate mt-1">
-                    {item.institutionName}
-                  </div>
+                    <div className="text-slate-700 font-medium truncate mt-1">
+                      {item.institutionName}
+                    </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1.5">
-                    <span className="font-semibold text-slate-900">
-                      {formatINR(item.principalAmount)}
-                    </span>
-                    <span>{item.bankName}</span>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1.5">
+                      <span className="font-semibold text-slate-900">
+                        {formatINR(item.principalAmount)}
+                      </span>
+                      <span>{item.bankName}</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -262,14 +337,23 @@ export const BankVerificationPage: React.FC<Props> = ({ currentUser }) => {
                 onSubmit={handleRecordVerification}
                 className="bg-white rounded-lg border border-slate-200 shadow-2xs p-5 space-y-4 text-xs"
               >
-                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                    <span>Record Official Bank Verification Determination</span>
-                  </h3>
-                  <span className="text-[11px] text-slate-500">
-                    Mandatory for regulatory lien acceptance
-                  </span>
+                <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                      <span>Record Official Bank Verification Determination</span>
+                    </h3>
+                    <span className="text-[11px] text-slate-500">
+                      Mandatory for regulatory lien acceptance
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSimulateCbs}
+                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-semibold text-xs flex items-center gap-1.5 transition shadow-2xs self-start sm:self-auto"
+                  >
+                    <span>⚡ Simulate CBS Match & Auto-Fill</span>
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -35,9 +35,9 @@ export const FDRService = {
     if (user.role === 'INSTITUTION' && user.institutionId) {
       records = records.filter((r) => r.institutionId === user.institutionId);
     }
-    // Bank officers focus on their bank if assigned, or all if unrestricted
-    if (user.role === 'BANK_OFFICER' && user.bankId) {
-      records = records.filter((r) => r.bankId === user.bankId);
+    // Bank officers: Show all pending verification records, prioritizing their designated bank
+    if (user.role === 'BANK_OFFICER' && filters?.bankId && filters.bankId !== 'ALL') {
+      records = records.filter((r) => r.bankId === filters.bankId);
     }
 
     if (!filters) return records;

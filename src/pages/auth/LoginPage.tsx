@@ -113,7 +113,8 @@ export const LoginPage: React.FC<Props> = ({ onLoginSuccess }) => {
         phone: res.user.mobile_number,
         institutionId: res.user.institution_profile?.institution_id,
         institutionName: res.user.institution_profile?.institution_name,
-        bankName: res.user.bank_profile?.bank_name,
+        bankId: (res.user.bank_profile as any)?.bank_id || (mappedRole === 'BANK_OFFICER' ? 'bank-sbi' : undefined),
+        bankName: res.user.bank_profile?.bank_name || (mappedRole === 'BANK_OFFICER' ? 'State Bank of India' : undefined),
         isApproved: res.user.account_status === 'approved',
         createdAt: res.user.created_at,
       };
