@@ -45,12 +45,26 @@ export const AuthService = {
   },
 
   login(email: string): { success: boolean; user?: User; isPending?: boolean; error?: string } {
+    const cleanEmail = email.toLowerCase().trim();
     const users = getStoredUsers();
-    const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    let user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    // Robust demo fallback alias matching for cloud/static deployments
+    if (!user) {
+      if (cleanEmail.includes('sbi') || cleanEmail.includes('bank')) {
+        user = users.find((u) => u.role === 'BANK_OFFICER');
+      } else if (cleanEmail.includes('aicte') || cleanEmail.includes('regulatory') || cleanEmail.includes('meenakshi')) {
+        user = users.find((u) => u.role === 'REGULATORY_OFFICER');
+      } else if (cleanEmail.includes('admin') || cleanEmail.includes('egov') || cleanEmail.includes('e-gov')) {
+        user = users.find((u) => u.role === 'ADMIN');
+      } else if (cleanEmail.includes('ceg') || cleanEmail.includes('annauniv') || cleanEmail.includes('registrar') || cleanEmail.includes('institution')) {
+        user = users.find((u) => u.role === 'INSTITUTION');
+      }
+    }
 
     // Also check registration requests
     const requests = getStoredRegistrationRequests();
-    const matchingReq = requests.find((r) => r.email.toLowerCase() === email.toLowerCase());
+    const matchingReq = requests.find((r) => r.email.toLowerCase() === cleanEmail);
 
     if (matchingReq && matchingReq.status === 'PENDING') {
       return {

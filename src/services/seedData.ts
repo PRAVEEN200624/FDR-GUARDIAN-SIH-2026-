@@ -128,7 +128,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user-bank-01',
     name: 'Amitav Sengupta',
-    email: 'amitav.sengupta@sbi.demo.in',
+    email: 'amitav.sengupta@sbi.co.in',
     role: 'BANK_OFFICER',
     designation: 'Chief Manager, Institutional Accounts',
     bankId: 'bank-sbi',
@@ -140,7 +140,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user-reg-01',
     name: 'Smt. Meenakshi Sundaram',
-    email: 'meenakshi.s@aicte-regulatory.demo.gov.in',
+    email: 'meenakshi.sundaram@aicte-india.org',
     role: 'REGULATORY_OFFICER',
     designation: 'Joint Director (Institutional Finance & Approvals)',
     phone: '+91 9811234567',
@@ -150,7 +150,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user-admin-01',
     name: 'Vikramaditya Roy',
-    email: 'admin.fdrguardian@e-gov.demo.in',
+    email: 'admin@fdrguardian.demo.gov.in',
     role: 'ADMIN',
     designation: 'Lead Architect & Portal Administrator',
     phone: '+91 9900112233',
