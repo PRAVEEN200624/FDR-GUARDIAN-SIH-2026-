@@ -60,16 +60,30 @@ def parse_fdr_fields(text: str) -> Dict[str, Any]:
             break
 
     # 2. FDR / Certificate Number
+    STOP_WORDS = {
+        "ACCOUNT", "CUST", "CUSTOMER", "NO", "NUMBER", "RECEIPT", "CERTIFICATE",
+        "DEPOSITOR", "INSTITUTION", "DATE", "BRANCH", "CODE", "CATEGORY",
+        "AMOUNT", "PRINCIPAL", "TENURE", "RATE", "INTEREST", "VALUE", "DETAILS"
+    }
     fdr_patterns = [
+        r'\b([A-Z]{2,4}-[A-Z0-9]+-[A-Z0-9\-]+)\b',
+        r'FDR\s*(?:No|Number|Receipt)?\.?\s*[:\n\s]*([A-Z0-9\-\/]+)',
         r'(?:Receipt|Certificate)\s*(?:\/\s*Certificate)?\s*No\.?\s*[:\n\s]+([A-Z0-9\-\/]+)',
-        r'FDR\s*(?:No|Number|Receipt)\.?\s*[:\n\s]+([A-Z0-9\-\/]+)',
         r'Deposit\s*Advice\s*No\.?\s*[:\n\s]+([A-Z0-9\-\/]+)',
         r'Certificate\s*No\.?\s*[:\n\s]+([A-Z0-9\-\/]+)'
     ]
     for pat in fdr_patterns:
-        m = re.search(pat, text, re.I)
-        if m and len(m.group(1).strip()) > 4:
-            extracted["fdr_number"] = m.group(1).strip().upper()
+        for m in re.finditer(pat, text, re.I):
+            cand = m.group(1).strip().upper()
+            if (
+                len(cand) >= 5
+                and cand not in STOP_WORDS
+                and not any(cand.startswith(sw) for sw in ["ACCOUNT", "CUST", "RECEIPT", "CERTIFICATE"])
+                and re.search(r'\d', cand)
+            ):
+                extracted["fdr_number"] = cand
+                break
+        if extracted["fdr_number"]:
             break
 
     # 3. Principal Amount
