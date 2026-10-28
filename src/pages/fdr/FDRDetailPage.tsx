@@ -76,16 +76,31 @@ export const FDRDetailPage: React.FC<Props> = ({ currentUser }) => {
 
   if (!fdr) {
     return (
-      <div className="max-w-4xl mx-auto bg-white p-8 rounded-lg border border-slate-200 text-center my-12">
-        <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-slate-900">FDR Record Not Found</h2>
-        <p className="text-xs text-slate-500 mt-1">The requested FDR reference ID does not exist in the repository.</p>
-        <button
-          onClick={() => navigate('/fdr')}
-          className="mt-4 px-4 py-2 bg-gov-navy text-white text-xs font-semibold rounded hover:bg-blue-900 transition"
-        >
-          Back to FDR Registry
-        </button>
+      <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl border border-slate-200 text-center my-12 shadow-md space-y-4">
+        <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto border border-amber-200">
+          <AlertTriangle className="w-8 h-8" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">FDR Record Not Found</h2>
+          <p className="text-xs text-slate-600 mt-1 max-w-md mx-auto">
+            The requested reference <span className="font-mono font-semibold text-slate-800">"{id}"</span> was not found in your current active session repository.
+          </p>
+        </div>
+        <div className="pt-2 flex items-center justify-center gap-3">
+          <button
+            onClick={() => navigate('/fdr')}
+            className="px-4 py-2 bg-gov-navy text-white text-xs font-semibold rounded-lg hover:bg-blue-900 transition flex items-center gap-2 shadow-xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Open All Institutional FDRs</span>
+          </button>
+          <button
+            onClick={() => navigate('/fdr/fdr-001')}
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg border border-slate-300 transition"
+          >
+            View Sample CEG Guindy FDR
+          </button>
+        </div>
       </div>
     );
   }

@@ -14,6 +14,7 @@ import {
   getCurrentUser,
 } from '../lib/storage';
 import { generateMockSha256 } from '../lib/utils';
+import { INITIAL_FDRS } from './seedData';
 
 export interface FDRFilterParams {
   search?: string;
@@ -80,13 +81,34 @@ export const FDRService = {
   },
 
   getFDRById(id: string): FDRRecord | undefined {
+    if (!id) return undefined;
+    const clean = id.trim().toLowerCase();
+    const cleanAlphanumeric = clean.replace(/[^a-z0-9]/g, '');
     const all = getStoredFDRs();
-    return all.find((r) => r.id === id);
+
+    // 1. Check stored active records (by ID, FDR certificate number, or verification ID)
+    const found = all.find(
+      (r) =>
+        r.id.toLowerCase() === clean ||
+        r.fdrNumber.toLowerCase() === clean ||
+        (r.publicVerificationId && r.publicVerificationId.toLowerCase() === clean) ||
+        r.fdrNumber.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanAlphanumeric
+    );
+    if (found) return found;
+
+    // 2. Fallback to seed records
+    return INITIAL_FDRS.find(
+      (r) =>
+        r.id.toLowerCase() === clean ||
+        r.fdrNumber.toLowerCase() === clean ||
+        (r.publicVerificationId && r.publicVerificationId.toLowerCase() === clean) ||
+        r.fdrNumber.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanAlphanumeric
+    );
   },
 
   getFDRByPublicId(publicId: string): FDRRecord | undefined {
-    const all = getStoredFDRs();
-    return all.find((r) => r.publicVerificationId === publicId);
+    if (!publicId) return undefined;
+    return this.getFDRById(publicId);
   },
 
   checkDuplicate(fdrNumber: string, bankId: string): boolean {
